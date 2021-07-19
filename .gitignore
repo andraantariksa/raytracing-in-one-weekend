@@ -1,0 +1,4 @@
+cmake-build-debug-visual-studio/
+out/
+.vs/
+.idea/
