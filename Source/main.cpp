@@ -1,120 +1,132 @@
 ﻿#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <cassert>
+#include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/compatibility.hpp>
 #include <glm/common.hpp>
-#include "color.hpp"
-#include "surface.hpp"
-#include "ray.hpp"
+#include <utility>
+#include <iostream>
 
-bool hitSphere(const glm::vec3& center, const float r, const Ray& ray)
+#include "typedef.hpp"
+#include "Surface.hpp"
+#include "Ray.hpp"
+#include "Hit/HittableObjects.hpp"
+#include "Camera.hpp"
+#include "Hit/Object/SphereObject.hpp"
+#include "Render.cuh"
+#include "Misc/Random.hpp"
+#include <ppl.h>
+
+Color rayColor(const Ray& ray, const HittableObjects& world)
 {
-	// P = Point lies in the sphere surface (Vector)
-	// C = center of sphere (Vector)
-	// (x - C_x)^2 + (y - C_y)^2 + (z + C_z)^2 = r^2
-	// To vector notation
-	// (P - C) ⋅ (P - C) = r^2
-	// 
-	// b = Direction of ray (Vector)
-	// A = Ray origin or camera (Vector)
-	// t = Scale of direction to touch the object that are hitable by  (Scalar)ray
-	// P(t) = A + t * b
-	//
-	// (P(t) - C) ⋅ (P(t) - C) = r^2
-	// (A + t * b - C) ⋅ (A + t * b - C) = r^2
-	// (t * b + (A - C)) ⋅ (t * b + (A - C)) = r^2
-	// (tb)^2 + t * b ⋅ (A - C) * 2 + (A - C) ⋅ (A - C) = r^2
-	// t^2 * b ⋅ b + t * b ⋅ (A - C) * 2 + (A - C) ⋅ (A - C) - r^2 = 0
-	// Every variable is known except t. Turn it into quadratic
-	// (b ⋅ b) * t^2 + 2 * b ⋅ (A - C) * t + (A - C) ⋅ (A - C) - r^2 = 0
-	//
-	// ax^2 + bx + c
-	// a = b ⋅ b
-	// b = 2 * b ⋅ (A - C)
-	// c = (A - C) ⋅ (A - C) - r^2
-	auto ASubC = ray.origin() - center;
-	auto a = glm::dot(ray.direction(), ray.direction());
-	auto b = 2.0f * glm::dot(ray.direction(), ASubC);
-	auto c = glm::dot(ASubC, ASubC) - r * r;
-	auto discriminant = b * b - 4 * a * c;
-	return discriminant >= 0.0f;
-}
+    auto hit = world.hit(ray, 0.0f, std::numeric_limits<float>::infinity());
+    if (hit.has_value())
+    {
+        auto hitData = hit.value();
+        return 0.5f * Color(std::max(hitData.N.x + 1.0f, 1.0f),
+            std::max(hitData.N.y + 1.0f, 1.0f),
+            std::max(hitData.N.z + 1.0f, 1.0f));
+    }
 
-Color rayColor(const Ray& ray)
-{
-	if (hitSphere(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f, ray))
-	{
-		return Color(1.0f, 0.0f, 0.0f);
-	}
-
-	auto directionNorm = glm::normalize(ray.direction());
-	auto t = (directionNorm.y + 1.0f) * 0.5f;
-	return glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
+    auto directionNorm = glm::normalize(ray.direction());
+    auto t = (directionNorm.y + 1.0f) * 0.5f;
+    return glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
 }
 
 int main()
 {
-	assert(SDL_Init(SDL_INIT_VIDEO) == 0);
-	const int windowWidth = 1280;
-	const int windowHeight = 720;
-	const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
-	const float viewportHeight = 10.0f;
-	const float vocalLength = 10.0f;
-	auto* window = SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
-	assert(window != nullptr);
+    assert(SDL_Init(SDL_INIT_VIDEO) == 0);
+    const int windowWidth = 1280;
+    const int windowHeight = 720;
+    const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
+    const float viewportHeight = 10.0f;
+    const float vocalLength = 10.0f;
+    auto* window =
+        SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
+    assert(window != nullptr);
 
-	auto *surface = SDL_GetWindowSurface(window);
-	uint32_t* pixels = (uint32_t*)surface->pixels;
-	
-	// Draw
+    CUDA_render_setup(windowWidth, windowHeight);
 
-	SDL_LockSurface(surface);
+    // Draw
+    Surface surf(window, windowWidth, windowHeight);
+    Camera camera(glm::vec3(0.0f), viewportWidth, viewportHeight, vocalLength);
+    int pixelSamples = 5;
 
-	glm::vec3 camera(0.0f, 0.0f, 0.0f);
-	Surface s(pixels, windowWidth, windowHeight);
+    HittableObjects world;
+    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f)));
+    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f)));
 
-	for (int i = 0; i < windowHeight; i++)
-	{
-		for (int j = 0; j < windowWidth; j++)
-		{
-			float u = (float)j / (float)windowWidth;
-			float v = (float)i / (float)windowHeight;
-			/*Color color;
-			color.b = 0.25f;*/
+    surf.setDrawFunc([&](auto s)
+    {
+        concurrency::parallel_for(0, windowHeight, [&](int i)
+        {
+          concurrency::parallel_for(0, windowWidth, [&](int j)
+          {
+              Color accColor(0.0f);
+              for (int s = 0; s < pixelSamples; s++)
+              {
+                  float u = (float)(j + randomIntOne()) / (float)windowWidth;
+                  float v = (float)(i + randomIntOne()) / (float)windowHeight;
+                  accColor += rayColor(camera.getRay(u, v), world);
+              }
+              s.setPixel(j, i, accColor, pixelSamples);
+          });
+        });
+    });
+    surf.draw();
 
-			Ray ray{
-				camera,
-				(camera + glm::vec3(-viewportWidth / 2.0f, -viewportHeight / 2.0f, -vocalLength)) +
-				glm::vec3(viewportWidth, 0.0f, 0.0f) * u +
-				glm::vec3(0.0f, viewportHeight, 0.0f) * v -
-				camera };
-			s.setPixel(j, i, rayColor(ray));
-		}
-	}
+    // End draw
 
-	SDL_UnlockSurface(surface);
-	SDL_UpdateWindowSurface(window);
+    SDL_Event event;
 
-	// End draw
-	
-	SDL_Event event;
+    bool running = true;
+    bool isNeedToRedraw = false;
+    while (running)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_QUIT:
+                running = false;
+                break;
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_a:
+                    camera.transform(glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
+                    break;
+                case SDLK_d:
+                    camera.transform(glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+                    break;
+                case SDLK_w:
+                    camera.transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+                    break;
+                case SDLK_s:
+                    camera.transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+                    break;
+                default:
+                    break;
+                }
+                isNeedToRedraw = true;
+                break;
+            }
+        }
 
-	bool running = true;
-	while (running)
-	{
-		while (SDL_PollEvent(&event))
-		{
-			if (event.type == SDL_QUIT)
-			{
-				running = false;
-			}
-		}
-	}
+        if (isNeedToRedraw)
+        {
+            surf.draw();
+            isNeedToRedraw = false;
+        }
+    }
 
-	SDL_DestroyWindow(window);
+    CUDA_render_destroy();
+    SDL_DestroyWindow(window);
 
-	SDL_Quit();
+    SDL_Quit();
 
-	return 0;
+    return 0;
 }

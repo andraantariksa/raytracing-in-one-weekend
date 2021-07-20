@@ -1,8 +1,35 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project ("raytracing")
+project("raytracing" LANGUAGES CXX CUDA)
 
-add_executable (raytracing "Source/main.cpp" "Source/main.hpp" "Source/surface.cpp" "Source/surface.hpp" "Source/color.hpp" "Source/ray.hpp")
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
+else()
+    target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+endif()
+
+add_executable(raytracing
+        "Source/main.cpp"
+        "Source/Surface.cpp"
+        "Source/Surface.hpp"
+        "Source/typedef.hpp"
+        "Source/Ray.hpp"
+        Source/Hit/IHittableObject.hpp
+        Source/Hit/HitData.hpp
+        Source/Hit/Object/SphereObject.cpp
+        Source/Hit/Object/SphereObject.hpp
+        Source/Hit/HittableObjects.cpp
+        Source/Hit/HittableObjects.hpp
+        Source/Misc/Random.hpp
+        Source/Camera.cpp
+        Source/Camera.hpp
+        "Source/Render.cu"
+        "Source/Render.cuh")
+
+target_compile_features(raytracing PUBLIC cxx_std_17)
+set_target_properties(raytracing
+        PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON)
 
 target_include_directories(raytracing PUBLIC
         "External/glm")
