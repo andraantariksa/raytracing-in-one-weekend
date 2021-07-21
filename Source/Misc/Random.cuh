@@ -1,5 +1,5 @@
-#ifndef RAYTRACING_SOURCE_MISC_RANDOM_HPP
-#define RAYTRACING_SOURCE_MISC_RANDOM_HPP
+#ifndef RAYTRACING_SOURCE_MISC_RANDOM_CUH
+#define RAYTRACING_SOURCE_MISC_RANDOM_CUH
 
 #include <random>
 
@@ -17,4 +17,4 @@ inline int randomIntOne()
     return distribution(generator);
 }
 
-#endif //RAYTRACING_SOURCE_MISC_RANDOM_HPP
+#endif //RAYTRACING_SOURCE_MISC_RANDOM_CUH

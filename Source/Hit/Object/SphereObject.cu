@@ -1,6 +1,6 @@
 #include <optional>
 
-#include "SphereObject.hpp"
+#include "SphereObject.cuh"
 
 std::optional<HitData> SphereObject::hit(const Ray& ray, float t_min, float t_max) const
 {

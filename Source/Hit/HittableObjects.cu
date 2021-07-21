@@ -1,4 +1,4 @@
-#include "HittableObjects.hpp"
+#include "HittableObjects.cuh"
 
 std::optional<HitData> HittableObjects::hit(const Ray& ray, float tMin, float tMax) const
 {

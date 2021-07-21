@@ -3,8 +3,8 @@
 
 #include <optional>
 
-#include "../HitData.hpp"
-#include "../IHittableObject.hpp"
+#include "../HitData.cuh"
+#include "../IHittableObject.cu"
 
 class SphereObject: public IHittableObject
 {
@@ -14,7 +14,7 @@ public:
     }
 
     [[nodiscard]]
-    std::optional<HitData> hit(const Ray &ray, float t_min, float t_max) const override;
+    __host__ __device__ std::optional<HitData> hit(const Ray &ray, float t_min, float t_max) const override;
 private:
     float m_r;
     glm::vec3 m_center;

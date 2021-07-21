@@ -1,14 +1,19 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#include <cuda.h>
+#include <curand_kernel.h>
+#include <curand.h>
+#include <cstdlib>
+#include <ctime>
 
-#include "Surface.hpp"
-#include "typedef.hpp"
+#include "Surface.cuh"
+#include "typedef.cuh"
 
-Surface::Surface(SDL_Window* window, int width, int m_height):
+Surface::Surface(SDL_Window* window, int width, int height):
     m_window(window),
     m_width(width),
-    m_height(m_height),
+    m_height(height),
     m_surface(SDL_GetWindowSurface(window)),
     m_frameBuffer((uint32_t*)m_surface->pixels)
 {
@@ -41,3 +46,16 @@ void Surface::draw()
     SDL_UnlockSurface(m_surface);
     SDL_UpdateWindowSurface(m_window);
 }
+
+void Surface::copyFramebufferHostToDevice(uint32_t* deviceBuffer)
+{
+//    memset(m_frameBuffer, (int)((time(nullptr) * 100) % INT_MAX), sizeof(uint32_t) * m_width * m_height);
+    cudaMemcpy(deviceBuffer, m_frameBuffer, sizeof(uint32_t) * m_width * m_height, cudaMemcpyHostToDevice);
+}
+
+void Surface::copyFramebufferDeviceToHost(uint32_t* deviceBuffer)
+{
+    cudaMemcpy(m_frameBuffer, deviceBuffer, sizeof(uint32_t) * m_width * m_height, cudaMemcpyDeviceToHost);
+}
+
+// sizeof(uint32_t) * m_width * m_height

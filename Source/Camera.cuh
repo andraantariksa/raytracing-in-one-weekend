@@ -1,14 +1,14 @@
-#ifndef RAYTRACING_SOURCE_CAMERA_HPP
-#define RAYTRACING_SOURCE_CAMERA_HPP
+#ifndef RAYTRACING_SOURCE_CAMERA_CUH
+#define RAYTRACING_SOURCE_CAMERA_CUH
 
-#include "Ray.hpp"
+#include "Ray.cuh"
 #include <glm/glm.hpp>
 
 class Camera
 {
 public:
     Camera(glm::vec3 origin, float viewportWidth, float viewportHeight, float vocalLength);
-    Ray getRay(float u, float v);
+    __host__ __device__ Ray getRay(float u, float v);
     void transform(glm::mat4 transformMat);
     void recalculate();
 private:
@@ -19,4 +19,4 @@ private:
     glm::vec3 m_viewportOrigin;
 };
 
-#endif //RAYTRACING_SOURCE_CAMERA_HPP
+#endif //RAYTRACING_SOURCE_CAMERA_CUH

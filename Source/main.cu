@@ -10,14 +10,14 @@
 #include <utility>
 #include <iostream>
 
-#include "typedef.hpp"
-#include "Surface.hpp"
-#include "Ray.hpp"
-#include "Hit/HittableObjects.hpp"
-#include "Camera.hpp"
-#include "Hit/Object/SphereObject.hpp"
+#include "typedef.cuh"
+#include "Surface.cuh"
+#include "Ray.cuh"
+#include "Hit/HittableObjects.cuh"
+#include "Camera.cuh"
+#include "Hit/Object/SphereObject.cuh"
 #include "Render.cuh"
-#include "Misc/Random.hpp"
+#include "Misc/Random.cuh"
 #include <ppl.h>
 
 Color rayColor(const Ray& ray, const HittableObjects& world)
@@ -36,6 +36,13 @@ Color rayColor(const Ray& ray, const HittableObjects& world)
     return glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
 }
 
+__global__ void r(uint32_t * cudaRender, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjects& world, Surface& s)
+{
+    int i = threadIdx.x;
+    int j = blockIdx.x;
+    cudaRender[windowWidth * i + j] = 0x000000FF;
+}
+
 int main()
 {
     assert(SDL_Init(SDL_INIT_VIDEO) == 0);
@@ -44,16 +51,21 @@ int main()
     const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
     const float viewportHeight = 10.0f;
     const float vocalLength = 10.0f;
+    int pixelSamples = 5;
     auto* window =
         SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     assert(window != nullptr);
 
-    CUDA_render_setup(windowWidth, windowHeight);
+//    CUDA_Render cudaRender = CUDA_render_setup(windowWidth, windowHeight, pixelSamples);
+    CUDA_Render cudaRender{};
+    cudaMalloc((void**)&cudaRender.gpuFramebuffer, sizeof(uint32_t) * windowWidth * windowHeight);
+    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+    cudaMalloc((void**)&cudaRender.randomState, windowWidth * windowHeight * pixelSamples *sizeof(curandState));
+    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
 
     // Draw
     Surface surf(window, windowWidth, windowHeight);
     Camera camera(glm::vec3(0.0f), viewportWidth, viewportHeight, vocalLength);
-    int pixelSamples = 5;
 
     HittableObjects world;
     world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f)));
@@ -61,20 +73,23 @@ int main()
 
     surf.setDrawFunc([&](auto s)
     {
-        concurrency::parallel_for(0, windowHeight, [&](int i)
+//        std::cout << "Draw\n";
+        surf.copyFramebufferHostToDevice(cudaRender.gpuFramebuffer);
+        // The rendering process is splitted into 4 region. See Render.cuh
+        for (unsigned short section = 0; section < 4; section++)
         {
-          concurrency::parallel_for(0, windowWidth, [&](int j)
-          {
-              Color accColor(0.0f);
-              for (int s = 0; s < pixelSamples; s++)
-              {
-                  float u = (float)(j + randomIntOne()) / (float)windowWidth;
-                  float v = (float)(i + randomIntOne()) / (float)windowHeight;
-                  accColor += rayColor(camera.getRay(u, v), world);
-              }
-              s.setPixel(j, i, accColor, pixelSamples);
-          });
-        });
+            CUDA_render_render_<<<640, 360>>>(cudaRender.gpuFramebuffer,
+                section,
+                windowWidth,
+                windowHeight,
+                pixelSamples,
+                camera,
+                world,
+                s);
+        }
+//        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+        surf.copyFramebufferDeviceToHost(cudaRender.gpuFramebuffer);
+//        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
     });
     surf.draw();
 
@@ -116,14 +131,14 @@ int main()
             }
         }
 
-        if (isNeedToRedraw)
-        {
+//        if (isNeedToRedraw)
+//        {
             surf.draw();
-            isNeedToRedraw = false;
-        }
+//            isNeedToRedraw = false;
+//        }
     }
 
-    CUDA_render_destroy();
+    CUDA_render_destroy(&cudaRender);
     SDL_DestroyWindow(window);
 
     SDL_Quit();

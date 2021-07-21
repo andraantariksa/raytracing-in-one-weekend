@@ -1,4 +1,4 @@
-#include "Camera.hpp"
+#include "Camera.cuh"
 
 Camera::Camera(glm::vec3 origin, float viewportWidth, float viewportHeight, float vocalLength):
     m_origin(origin),
