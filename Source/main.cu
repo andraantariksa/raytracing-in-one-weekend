@@ -143,7 +143,7 @@ int main()
     const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
     const float viewportHeight = 10.0f;
     const float vocalLength = 10.0f;
-    int pixelSamples = 5;
+    int pixelSamples = 10;
     auto* window =
         SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     assert(window != nullptr);
@@ -152,7 +152,7 @@ int main()
     CUDA_Render cudaRender{};
     cudaMalloc((void**)&cudaRender.gpuFramebuffer, sizeof(uint32_t) * windowWidth * windowHeight);
     printf("%s\n", cudaGetErrorString(cudaGetLastError()));
-    cudaMalloc((void**)&cudaRender.randomState, windowWidth * windowHeight *sizeof(curandState));
+    cudaMalloc((void**)&cudaRender.randomState, sizeof(curandState) * windowWidth * windowHeight);
     printf("%s\n", cudaGetErrorString(cudaGetLastError()));
 
     // Draw
@@ -179,26 +179,28 @@ int main()
     cudaMemcpy(&worldDevice.m_objects[1], &od_2, sizeof(IHittableObject*), cudaMemcpyHostToDevice);
 //    worldDevice.set(1, (IHittableObject **)&od_2);
 
+    surf.copyFramebufferHostToDevice(cudaRender.gpuFramebuffer);
+
+    int section = 0;
+    CUDA_render_init<<<1280, 720>>>(
+        cudaRender.randomState,
+        section,
+        windowWidth,
+        windowHeight);
+    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+
     surf.setDrawFunc([&](auto s)
     {
-//        std::cout << "Draw\n";
-        surf.copyFramebufferHostToDevice(cudaRender.gpuFramebuffer);
-        // The rendering process is splitted into 4 region. See Render.cuh
-        for (unsigned short section = 0; section < 4; section++)
-        {
-            CUDA_render_render_<<<640, 360>>>(cudaRender.gpuFramebuffer,
-                cudaRender.randomState,
-                section,
-                windowWidth,
-                windowHeight,
-                pixelSamples,
-                camera,
-                worldDevice,
-                s);
-        }
-//        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+        CUDA_render_render_<<<1280, 720>>>(cudaRender.gpuFramebuffer,
+            cudaRender.randomState,
+            section,
+            windowWidth,
+            windowHeight,
+            pixelSamples,
+            camera,
+            worldDevice,
+            s);
         surf.copyFramebufferDeviceToHost(cudaRender.gpuFramebuffer);
-//        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
     });
     surf.draw();
 
@@ -224,6 +226,7 @@ int main()
                 running = false;
                 break;
             case SDL_KEYDOWN:
+            {
                 switch (event.key.keysym.sym)
                 {
                 case SDLK_a:
@@ -244,6 +247,7 @@ int main()
                 isNeedToRedraw = true;
                 break;
             }
+            }
         }
 
         if (isNeedToRedraw)
@@ -253,7 +257,7 @@ int main()
         }
 
         frame++;
-        if( update.get_ticks() > 1000 )
+        if(update.get_ticks() > 1000)
         {
             std::stringstream caption;
             caption << "Average Frames Per Second: " << frame / ( fps.get_ticks() / 1000.f );

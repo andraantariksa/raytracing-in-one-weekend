@@ -7,8 +7,6 @@ HittableObjectsDevice::HittableObjectsDevice(int totalObject):
     m_totalObject(totalObject)
 {
     cudaMalloc((void**)&m_objects, sizeof(IHittableObject*) * totalObject * 2);
-    printf("create %p length %llu\n", m_objects, sizeof(IHittableObject*) * totalObject);
-    printf("idx %p\n", &m_objects[1]);
 }
 
 void HittableObjectsDevice::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, float tMin, float tMax) const
