@@ -3,11 +3,21 @@
 
 #include <glm/glm.hpp>
 
-struct HitData
+class HitData
 {
+public:
     glm::vec3 N;
     float t;
     glm::vec3 coord;
+
+    __host__ __device__ HitData() = default;
+
+    __host__ __device__ HitData(const HitData& other):
+        N(other.N),
+        t(other.t),
+        coord(other.coord)
+    {
+    }
 };
 
 #endif //RAYTRACING_SOURCE_HITDATA_HPP

@@ -10,6 +10,7 @@
 #include "typedef.cuh"
 #include "Camera.cuh"
 #include "Hit/HittableObjects.cuh"
+#include "Hit/HittableObjectsDevice.cuh"
 //#include "Misc/Random.hpp"
 #include "Surface.cuh"
 #include "Render.cuh"
@@ -30,12 +31,13 @@ void CUDA_render_destroy(CUDA_Render* cudaRender)
     cudaFree(cudaRender->randomState);
 }
 
-__device__ Color CUDA_rayColor(const Ray& ray, const HittableObjects& world)
+__device__ Color CUDA_rayColor(const Ray& ray, const HittableObjectsDevice& world)
 {
-    auto hit = world.hit(ray, 0.0f, std::numeric_limits<float>::infinity());
-    if (hit.has_value())
+    HitData hitData;
+    bool hasValue = false;
+    world.hit(hitData, hasValue, ray, 0.0f, std::numeric_limits<float>::infinity());
+    if (hasValue)
     {
-        auto hitData = hit.value();
         return 0.5f * Color(std::max(hitData.N.x + 1.0f, 1.0f),
             std::max(hitData.N.y + 1.0f, 1.0f),
             std::max(hitData.N.z + 1.0f, 1.0f));
@@ -46,30 +48,35 @@ __device__ Color CUDA_rayColor(const Ray& ray, const HittableObjects& world)
     return glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
 }
 
-__global__ void CUDA_render_render_(uint32_t* framebuffer, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjects& world, Surface& s)
+__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, Surface& s)
 {
 //    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//    curand_init(0, idx, 0, &cudaRender->randomState[idx]);
 //    float random = curand_uniform(&cudaRender->randomState[idx]);
     // DO NOT modify threadIdx.x or blockIdx.x by adding them directly, copy their value first!
     int i = threadIdx.x;
     i += (section > 1) ? windowHeight / 2 : 0;
     int j = blockIdx.x;
     j += (section % 2 != 0) ? windowWidth / 2 : 0;
+
+    int framebufferIdx = windowWidth * i + j;
+
+    curand_init(0, framebufferIdx, 0, &randomState[framebufferIdx]);
+
     Color accColor(0.0f);
     for (int s = 0; s < pixelSamples; s++)
     {
-        float u = (float)(j) / (float)windowWidth;
-        float v = (float)(i) / (float)windowHeight;
-//                accColor += CUDA_rayColor(camera.getRay(u, v), world);
+        int a = (int)std::ceilf(curand_uniform(&randomState[framebufferIdx]) * 3.0f) - 2;
+        float u = (float)(j + a) / (float)windowWidth;
+        int b = (int)std::ceilf(curand_uniform(&randomState[framebufferIdx]) * 3.0f) - 2;
+        float v = (float)(i + b) / (float)windowHeight;
+        accColor += CUDA_rayColor(camera.getRay(u, v), world);
     }
-//            s.setPixel(j, i, accColor, pixelSamples);
-//            Color colorScaled = accColor / (float)pixelSamples;
+    Color colorScaled = accColor / (float)pixelSamples;
 
-//    int col = 0x000000FF;
-//            col |= std::clamp(static_cast<int>(255.0f * colorScaled.r), 0, 255) << 16;
-//            col |= std::clamp(static_cast<int>(255.0f * colorScaled.g), 0, 255) << 8;
-//            col |= std::clamp(static_cast<int>(255.0f * colorScaled.b), 0, 255);
+    int col = 0x000000FF;
+    col |= std::clamp(static_cast<int>(255.0f * colorScaled.r), 0, 255) << 16;
+    col |= std::clamp(static_cast<int>(255.0f * colorScaled.g), 0, 255) << 8;
+    col |= std::clamp(static_cast<int>(255.0f * colorScaled.b), 0, 255);
 
-//    framebuffer[windowWidth * i + j] = col;
+    framebuffer[framebufferIdx] = col;
 }

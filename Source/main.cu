@@ -6,6 +6,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/compatibility.hpp>
+#include <thrust/device_malloc.h>
 #include <glm/common.hpp>
 #include <utility>
 #include <iostream>
@@ -18,29 +19,120 @@
 #include "Hit/Object/SphereObject.cuh"
 #include "Render.cuh"
 #include "Misc/Random.cuh"
+#include "Hit/HittableObjectsDevice.cuh"
 #include <ppl.h>
+#include <sstream>
 
-Color rayColor(const Ray& ray, const HittableObjects& world)
+class Timer
 {
-    auto hit = world.hit(ray, 0.0f, std::numeric_limits<float>::infinity());
-    if (hit.has_value())
-    {
-        auto hitData = hit.value();
-        return 0.5f * Color(std::max(hitData.N.x + 1.0f, 1.0f),
-            std::max(hitData.N.y + 1.0f, 1.0f),
-            std::max(hitData.N.z + 1.0f, 1.0f));
-    }
+private:
+    //The clock time when the timer started
+    int startTicks;
 
-    auto directionNorm = glm::normalize(ray.direction());
-    auto t = (directionNorm.y + 1.0f) * 0.5f;
-    return glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
+    //The ticks stored when the timer was paused
+    int pausedTicks;
+
+    //The timer status
+    bool paused;
+    bool started;
+
+public:
+    //Initializes variables
+    Timer();
+
+    //The various clock actions
+    void start();
+    void stop();
+    void pause();
+    void unpause();
+
+    //Gets the timer's time
+    int get_ticks();
+
+    //Checks the status of the timer
+    bool is_started();
+    bool is_paused();
+};
+
+Timer::Timer()
+{
+    //Initialize the variables
+    startTicks = 0;
+    pausedTicks = 0;
+    paused = false;
+    started = false;
 }
 
-__global__ void r(uint32_t * cudaRender, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjects& world, Surface& s)
+void Timer::start()
 {
-    int i = threadIdx.x;
-    int j = blockIdx.x;
-    cudaRender[windowWidth * i + j] = 0x000000FF;
+    //Start the timer
+    started = true;
+
+    //Unpause the timer
+    paused = false;
+
+    //Get the current clock time
+    startTicks = SDL_GetTicks();
+}
+
+void Timer::stop()
+{
+    //Stop the timer
+    started = false;
+
+    //Unpause the timer
+    paused = false;
+}
+
+void Timer::pause()
+{
+    //If the timer is running and isn't already paused
+    if( ( started == true ) && ( paused == false ) )
+    {
+        //Pause the timer
+        paused = true;
+
+        //Calculate the paused ticks
+        pausedTicks = SDL_GetTicks() - startTicks;
+    }
+}
+
+void Timer::unpause()
+{
+    //If the timer is paused
+    if( paused == true )
+    {
+        //Unpause the timer
+        paused = false;
+
+        //Reset the starting ticks
+        startTicks = SDL_GetTicks() - pausedTicks;
+
+        //Reset the paused ticks
+        pausedTicks = 0;
+    }
+}
+
+int Timer::get_ticks()
+{
+    //If the timer is running
+    if( started == true )
+    {
+        //If the timer is paused
+        if( paused == true )
+        {
+            //Return the number of ticks when the timer was paused
+            return pausedTicks;
+        }
+        else
+        {
+            //Return the current time minus the start time
+            return SDL_GetTicks() - startTicks;
+        }
+    }
+
+    //If the timer isn't running
+    return 0;
 }
 
 int main()
@@ -60,16 +152,32 @@ int main()
     CUDA_Render cudaRender{};
     cudaMalloc((void**)&cudaRender.gpuFramebuffer, sizeof(uint32_t) * windowWidth * windowHeight);
     printf("%s\n", cudaGetErrorString(cudaGetLastError()));
-    cudaMalloc((void**)&cudaRender.randomState, windowWidth * windowHeight * pixelSamples *sizeof(curandState));
+    cudaMalloc((void**)&cudaRender.randomState, windowWidth * windowHeight *sizeof(curandState));
     printf("%s\n", cudaGetErrorString(cudaGetLastError()));
 
     // Draw
     Surface surf(window, windowWidth, windowHeight);
     Camera camera(glm::vec3(0.0f), viewportWidth, viewportHeight, vocalLength);
 
-    HittableObjects world;
-    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f)));
-    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f)));
+//    HittableObjects world;
+//    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f)));
+//    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f)));
+
+    HittableObjectsDevice worldDevice(2);
+
+    SphereObject* od_1;
+    cudaMalloc(&od_1, sizeof(SphereObject));
+    SphereObject oh_1(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f);
+    cudaMemcpy(od_1, &oh_1, sizeof(SphereObject), cudaMemcpyHostToDevice);
+    cudaMemcpy(&worldDevice.m_objects[0], &od_1, sizeof(IHittableObject*), cudaMemcpyHostToDevice);
+//    worldDevice.set(0, (IHittableObject **)&od_1);
+
+    SphereObject* od_2;
+    cudaMalloc(&od_2, sizeof(SphereObject));
+    SphereObject oh_2(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f);
+    cudaMemcpy(od_2, &oh_2, sizeof(SphereObject), cudaMemcpyHostToDevice);
+    cudaMemcpy(&worldDevice.m_objects[1], &od_2, sizeof(IHittableObject*), cudaMemcpyHostToDevice);
+//    worldDevice.set(1, (IHittableObject **)&od_2);
 
     surf.setDrawFunc([&](auto s)
     {
@@ -79,12 +187,13 @@ int main()
         for (unsigned short section = 0; section < 4; section++)
         {
             CUDA_render_render_<<<640, 360>>>(cudaRender.gpuFramebuffer,
+                cudaRender.randomState,
                 section,
                 windowWidth,
                 windowHeight,
                 pixelSamples,
                 camera,
-                world,
+                worldDevice,
                 s);
         }
 //        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
@@ -95,7 +204,13 @@ int main()
 
     // End draw
 
+    Timer update;
+    update.start();
+    Timer fps;
+    fps.start();
+
     SDL_Event event;
+    int frame = 0;
 
     bool running = true;
     bool isNeedToRedraw = false;
@@ -131,11 +246,20 @@ int main()
             }
         }
 
-//        if (isNeedToRedraw)
-//        {
+        if (isNeedToRedraw)
+        {
             surf.draw();
-//            isNeedToRedraw = false;
-//        }
+            isNeedToRedraw = false;
+        }
+
+        frame++;
+        if( update.get_ticks() > 1000 )
+        {
+            std::stringstream caption;
+            caption << "Average Frames Per Second: " << frame / ( fps.get_ticks() / 1000.f );
+            SDL_SetWindowTitle(window, caption.str().c_str());
+            update.start();
+        }
     }
 
     CUDA_render_destroy(&cudaRender);

@@ -5,6 +5,8 @@
 #include <curand_kernel.h>
 #include <curand.h>
 
+#include "Hit/HittableObjectsDevice.cuh"
+
 struct CUDA_Render
 {
     uint32_t* gpuFramebuffer;
@@ -18,6 +20,6 @@ void CUDA_render_destroy(CUDA_Render* cudaRender);
 // 1 = Top right
 // 2 = Bottom left
 // 3 = Bottom right
-__global__ void CUDA_render_render_(uint32_t* framebuffer, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjects& world, Surface& s);
+__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, Surface& s);
 
 #endif

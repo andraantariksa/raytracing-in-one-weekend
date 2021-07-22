@@ -18,7 +18,7 @@ add_executable(raytracing
         Source/Camera.cu
         Source/Camera.cuh
         "Source/Render.cu"
-        "Source/Render.cuh")
+        "Source/Render.cuh" Source/Hit/HittableObjectsDevice.cu Source/Hit/HittableObjectsDevice.cuh)
 
 target_compile_options(raytracing PRIVATE -expt-relaxed-constexpr)
 

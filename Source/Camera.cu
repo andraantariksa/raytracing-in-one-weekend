@@ -1,3 +1,4 @@
+#include "Ray.cuh"
 #include "Camera.cuh"
 
 Camera::Camera(glm::vec3 origin, float viewportWidth, float viewportHeight, float vocalLength):
@@ -20,7 +21,7 @@ Ray Camera::getRay(float u, float v)
         glm::vec3(m_viewportWidth, 0.0f, 0.0f) * u +
         glm::vec3(0.0f, m_viewportHeight, 0.0f) * v -
         m_origin;
-    return Ray(m_origin,rayDirection);
+    return Ray(m_origin, rayDirection);
 }
 
 void Camera::transform(glm::mat4 transformMat)
