@@ -10,6 +10,7 @@
 #include <glm/common.hpp>
 #include <utility>
 #include <iostream>
+#include <ctime>
 
 #include "typedef.cuh"
 #include "Surface.cuh"
@@ -143,7 +144,7 @@ int main()
     const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
     const float viewportHeight = 10.0f;
     const float vocalLength = 10.0f;
-    int pixelSamples = 10;
+    int pixelSamples = 100;
     auto* window =
         SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     assert(window != nullptr);
@@ -199,7 +200,7 @@ int main()
             pixelSamples,
             camera,
             worldDevice,
-            s);
+            std::time(nullptr));
         surf.copyFramebufferDeviceToHost(cudaRender.gpuFramebuffer);
     });
     surf.draw();

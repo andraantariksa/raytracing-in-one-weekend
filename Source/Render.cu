@@ -11,7 +11,7 @@
 #include "Camera.cuh"
 #include "Hit/HittableObjects.cuh"
 #include "Hit/HittableObjectsDevice.cuh"
-//#include "Misc/Random.hpp"
+#include "Misc/Random.cuh"
 #include "Surface.cuh"
 #include "Render.cuh"
 
@@ -57,11 +57,12 @@ __global__ void CUDA_render_init(curandState* randomState, unsigned short sectio
     curand_init(0, framebufferIdx, 0, &randomState[framebufferIdx]);
 }
 
-__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, Surface& s)
+__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, std::time_t time)
 {
     // DO NOT modify threadIdx.x or blockIdx.x by adding them directly, copy their value first!
     int i = blockIdx.x;
     int j = threadIdx.x;
+    glm::vec2 coord(i, j);
 
     int framebufferIdx = windowWidth * j + i;
 
@@ -71,10 +72,10 @@ __global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomSt
 
     for (int s = 0; s < pixelSamples; s++)
     {
-        int a = (int)std::ceilf(curand_uniform(&localRandomState) * 3.0f) - 2;
-        float u = (float)(i + a) / (float)windowWidth;
-        int b = (int)std::ceilf(curand_uniform(&localRandomState) * 3.0f) - 2;
-        float v = (float)(j + b) / (float)windowHeight;
+//        float u = ((float)i + goldenNoise(coord, time + s)) / (float)windowWidth;
+        float u = ((float)i + curand_uniform(&localRandomState)) / (float)windowWidth;
+//        float v = ((float)j + goldenNoise(coord, time + s)) / (float)windowHeight;
+        float v = ((float)j + curand_uniform(&localRandomState)) / (float)windowHeight;
         accColor += CUDA_rayColor(camera.getRay(u, v), world);
     }
     Color colorScaled = accColor / (float)pixelSamples;
