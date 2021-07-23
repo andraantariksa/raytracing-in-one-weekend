@@ -145,6 +145,7 @@ int main()
     const float viewportHeight = 10.0f;
     const float vocalLength = 10.0f;
     int pixelSamples = 100;
+    int maxRecursionDepth = 50;
     auto* window =
         SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     assert(window != nullptr);
@@ -200,7 +201,8 @@ int main()
             pixelSamples,
             camera,
             worldDevice,
-            std::time(nullptr));
+            std::time(nullptr),
+            maxRecursionDepth);
         surf.copyFramebufferDeviceToHost(cudaRender.gpuFramebuffer);
     });
     surf.draw();

@@ -21,6 +21,6 @@ void CUDA_render_destroy(CUDA_Render* cudaRender);
 // 2 = Bottom left
 // 3 = Bottom right
 __global__ void CUDA_render_init(curandState* randomState, unsigned short section, int windowWidth, int windowHeight);
-__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, std::time_t time);
+__global__ void CUDA_render_render_(uint32_t* framebuffer, curandState* randomState, unsigned short section, int windowWidth, int windowHeight, int pixelSamples, Camera camera, const HittableObjectsDevice world, std::time_t time, int maxRecursionDepth);
 
 #endif

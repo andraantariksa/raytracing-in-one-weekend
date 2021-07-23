@@ -13,14 +13,18 @@ void HittableObjectsDevice::hit(HitData& hitDataClosest, bool& hasValue, const R
 {
     float closestT = tMax;
 
-    for (int i = 0; i < 2; i++)
-    {
-
-    }
-
-    SphereObject oh_2(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f);
+    SphereObject oh_2(glm::vec3(0.0f, 0.0f, -10.0f), 4.0f);
+    SphereObject oh_1(glm::vec3(0.0f, -104.0f, -10.0f), 100.0f);
 
     bool objectHasValue = false;
+    oh_1.hit(hitDataClosest, objectHasValue, ray, tMin, tMax);
+    if (objectHasValue)
+    {
+        hasValue = true;
+        closestT = hitDataClosest.t;
+    }
+
+    objectHasValue = false;
     oh_2.hit(hitDataClosest, objectHasValue, ray, tMin, tMax);
     if (objectHasValue)
     {
