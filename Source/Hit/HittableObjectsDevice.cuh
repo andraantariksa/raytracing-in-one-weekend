@@ -4,7 +4,7 @@
 #include <optional>
 #include <thrust/device_vector.h>
 
-#include "IHittableObject.cu"
+#include "IHittableObject.cuh"
 #include "HittableObjects.cuh"
 
 class HittableObjectsDevice

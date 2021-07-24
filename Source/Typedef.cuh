@@ -1,5 +1,5 @@
-#ifndef _RT_COLOR_HPP
-#define _RT_COLOR_HPP
+#ifndef _RAYTRACING_COLOR_HPP
+#define _RAYTRACING_COLOR_HPP
 
 #include <glm/glm.hpp>
 #include <cstdint>

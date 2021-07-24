@@ -6,7 +6,7 @@
 #include <curand.h>
 #include <cstdint>
 #include <SDL2/SDL.h>
-#include "typedef.cuh"
+#include "Typedef.cuh"
 #include <functional>
 
 class Surface

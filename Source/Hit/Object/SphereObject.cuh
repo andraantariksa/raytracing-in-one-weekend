@@ -1,10 +1,8 @@
 #ifndef RAYTRACING_SOURCE_OBJECT_SPHEREOBJECT_HPP
 #define RAYTRACING_SOURCE_OBJECT_SPHEREOBJECT_HPP
 
-#include <optional>
-
 #include "../HitData.cuh"
-#include "../IHittableObject.cu"
+#include "../IHittableObject.cuh"
 
 class SphereObject: public IHittableObject
 {

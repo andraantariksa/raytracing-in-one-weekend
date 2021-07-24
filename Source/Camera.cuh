@@ -8,7 +8,7 @@ class Camera
 {
 public:
     Camera(glm::vec3 origin, float viewportWidth, float viewportHeight, float vocalLength);
-    __host__ __device__ Ray getRay(float u, float v);
+    __host__ __device__ Ray getRay(float u, float v) const;
     void transform(glm::mat4 transformMat);
     void recalculate();
 private:

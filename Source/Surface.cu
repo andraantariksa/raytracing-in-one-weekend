@@ -8,7 +8,7 @@
 #include <ctime>
 
 #include "Surface.cuh"
-#include "typedef.cuh"
+#include "Typedef.cuh"
 
 Surface::Surface(SDL_Window* window, int width, int height):
     m_window(window),

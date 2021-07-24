@@ -1,9 +1,9 @@
 #ifndef RAYTRACING_SOURCE_MISC_RANDOM_CUH
 #define RAYTRACING_SOURCE_MISC_RANDOM_CUH
 
-#include <random>
-#include <glm/gtx/norm.hpp>
-#include <glm/glm.hpp>
+#include "../../../../../../Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30037/include/random"
+#include "../../External/glm/glm/gtx/norm.hpp"
+#include "../../External/glm/glm/glm.hpp"
 
 inline float randomFloat()
 {

@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "IHittableObject.cu"
+#include "IHittableObject.cuh"
 #include "HittableObjectsDevice.cuh"
 
 class HittableObjects: public IHittableObject

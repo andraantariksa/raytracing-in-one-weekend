@@ -9,7 +9,7 @@
 class Ray
 {
 public:
-    __host__ __device__ Ray(glm::vec3& origin, glm::vec3& direction):
+    __host__ __device__ Ray(const glm::vec3& origin, const glm::vec3& direction):
 		m_origin(origin),
 		m_direction(direction)
 	{

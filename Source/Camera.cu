@@ -15,7 +15,7 @@ void Camera::recalculate()
     m_viewportOrigin = m_origin + glm::vec3(-m_viewportWidth / 2.0f, -m_viewportHeight / 2.0f, -m_vocalLength);
 }
 
-Ray Camera::getRay(float u, float v)
+Ray Camera::getRay(float u, float v) const
 {
     auto rayDirection = m_viewportOrigin +
         glm::vec3(m_viewportWidth, 0.0f, 0.0f) * u +
