@@ -55,5 +55,6 @@ bool SphereObject::hit(HitData& hitDataClosest, const Ray& ray, float t_min, flo
     hitDataClosest.coord = ray.at(root),
     hitDataClosest.t = root;
     hitDataClosest.N = glm::normalize(hitDataClosest.coord - m_center);
+    hitDataClosest.material = m_material;
     return true;
 }

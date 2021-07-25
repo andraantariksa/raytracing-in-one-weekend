@@ -27,7 +27,7 @@ add_executable(raytracing
         Source/Hit/Object/BoxObject.cuh
         Source/Util/Timer.cu
         Source/Util/Timer.cuh
-        "Source/Util/SDLHelpers.cuh")
+        "Source/Util/SDLHelpers.cuh" Source/Material/Lambertian.cu Source/Material/Lambertian.cuh)
 
 target_compile_definitions(raytracing PRIVATE
         GLM_SWIZZLE

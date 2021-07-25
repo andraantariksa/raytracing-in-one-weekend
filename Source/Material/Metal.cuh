@@ -1,17 +1,25 @@
-//
-// Created by andra on 24/07/2021.
-//
-
 #ifndef RAYTRACING_SOURCE_MATERIAL_METAL_CUH
 #define RAYTRACING_SOURCE_MATERIAL_METAL_CUH
 
 #include "../Hit/HitData.cuh"
 #include "../Ray.cuh"
 
-class Metal: public IMaterial
+class Metal : public IMaterial
 {
 public:
-    bool scatter(HitData& hitData, const Ray& ray, Color& attenuation, Ray& scatteredRay) const override;
+    __device__ Metal(const Color& albedo):
+        m_albedo(albedo)
+    {
+    }
+
+    __device__ bool scatter(HitData& hitData,
+        const Ray& ray,
+        Color& attenuation,
+        Ray& scatteredRay,
+        curandState* localRandomState,
+        int framebufferIdx) const override;
+private:
+    Color m_albedo;
 };
 
 #endif //RAYTRACING_SOURCE_MATERIAL_METAL_CUH

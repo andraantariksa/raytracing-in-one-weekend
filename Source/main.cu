@@ -23,11 +23,14 @@
 #include "Hit/HittableObjectsDevice.cuh"
 #include "Util/SDLHelpers.cuh"
 #include "Util/Timer.cuh"
+#include "Material/Metal.cuh"
+#include "Material/Lambertian.cuh"
 
 __global__ void init(IHittableObject** objects)
 {
-    objects[0] = new SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 4.0f);
-    objects[1] = new SphereObject(glm::vec3(0.0f, -104.0f, -10.0f), 100.0f);
+    objects[0] = new SphereObject(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f, new Metal(Color(0.753f)));
+    objects[1] = new SphereObject(glm::vec3(4.0f, 0.0f, -10.0f), 4.0f, new Lambertian(Color(0.0f, 0.753f, 0.0f)));
+    objects[2] = new SphereObject(glm::vec3(0.0f, -104.0f, -10.0f), 100.0f, new Lambertian(Color(1.0f, 0.0f, 0.0f)));
 }
 
 int main()
@@ -51,7 +54,7 @@ int main()
     Surface surf(window, windowWidth, windowHeight);
     Camera camera(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), M_PI / 2.0f, aspectRatio);
 
-    HittableObjectsDevice worldDevice(2);
+    HittableObjectsDevice worldDevice(3);
     init<<<1, 1>>>(worldDevice.getObjects());
 
     CUDARenderer renderer(windowWidth, windowHeight, camera, worldDevice, pixelSamples, maxRecursionDepth, 2.0f);

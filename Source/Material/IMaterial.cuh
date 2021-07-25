@@ -10,7 +10,12 @@ class HitData;
 class IMaterial
 {
 public:
-    virtual bool scatter(HitData& hitData, const Ray& ray, Color& attenuation, Ray& scatteredRay) const = 0;
+    __device__ virtual bool scatter(HitData& hitData,
+        const Ray& ray,
+        Color& attenuation,
+        Ray& scatteredRay,
+        curandState* localRandomState,
+        int framebufferIdx) const = 0;
 };
 
 #endif //RAYTRACING_SOURCE_IMATERIAL_CUH

@@ -1,10 +1,12 @@
-#ifndef RAYTRACING_SOURCE_HITDATA_HPP
-#define RAYTRACING_SOURCE_HITDATA_HPP
+#ifndef RAYTRACING_SOURCE_HITDATA_CUH
+#define RAYTRACING_SOURCE_HITDATA_CUH
 
 #include <glm/glm.hpp>
 #include <thrust/device_ptr.h>
 
 #include "../Material/IMaterial.cuh"
+
+class IMaterial;
 
 class HitData
 {
@@ -12,7 +14,7 @@ public:
     glm::vec3 N;
     float t;
     glm::vec3 coord;
-    thrust::device_ptr<IMaterial> material;
+    IMaterial* material;
 
     __host__ __device__ HitData() = default;
 

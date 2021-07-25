@@ -8,7 +8,10 @@
 class BoxObject: public IHittableObject
 {
 public:
-    __host__ __device__ BoxObject(glm::vec3 center, glm::vec3 size): m_size(size), m_center(center)
+    __host__ __device__ BoxObject(glm::vec3 center, glm::vec3 size, IMaterial* material):
+        m_size(size),
+        m_center(center),
+        m_material(material)
     {
     }
 
@@ -17,6 +20,7 @@ public:
 private:
     glm::vec3 m_size;
     glm::vec3 m_center;
+    IMaterial* m_material;
 };
 
 #endif //RAYTRACING_SOURCE_HIT_OBJECT_BOXOBJECT_CUH

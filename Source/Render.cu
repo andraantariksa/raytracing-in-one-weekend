@@ -16,40 +16,6 @@
 #include "Surface.cuh"
 #include "Render.cuh"
 
-__global__ void CUDA_render_init(CUDARenderer renderer);
-
-__global__ void CUDA_render_render(CUDARenderer renderer);
-
-__device__ Color CUDA_rayColor(const Ray& ray,
-    const HittableObjectsDevice& world,
-    curandState* localRandomState,
-    int framebufferIdx,
-    int maxRecursionDepth)
-{
-    float currentAttenuation = 1.0f;
-    Ray currentRay = ray;
-    for (int i = 0; i < maxRecursionDepth; ++i)
-    {
-        HitData hitData;
-        if (world.hit(hitData, currentRay, 0.001f, std::numeric_limits<float>::infinity()))
-        {
-            auto target = hitData.coord + hitData.N
-                + glm::normalize(randomInHemisphere(hitData.N, localRandomState, framebufferIdx));
-            currentAttenuation *= 0.5f;
-            currentRay = Ray(hitData.coord, target - hitData.coord);
-        }
-        else
-        {
-            auto directionNorm = glm::normalize(currentRay.direction());
-            auto t = (directionNorm.y + 1.0f) * 0.5f;
-            auto color = glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
-            return currentAttenuation * color;
-        }
-    }
-
-    return Color(0.0f, 0.0f, 0.0f);
-}
-
 __global__ void CUDA_render_init(CUDARenderer renderer)
 {
     auto framebufferIdx = renderer.framebufferIndex(blockIdx.x, threadIdx.x);
@@ -70,7 +36,7 @@ __global__ void CUDA_render_render(CUDARenderer renderer)
     {
         float u = ((float)i + curand_uniform(&localRandomState)) / (float)renderer.getWidth();
         float v = ((float)j + curand_uniform(&localRandomState)) / (float)renderer.getHeight();
-        accColor += CUDA_rayColor(renderer.getCamera().getRay(u, v), renderer.getWorld(), &localRandomState, framebufferIdx, renderer.getMaxLightBounce());
+        accColor += renderer.rayColor(renderer.getCamera().getRay(u, v), renderer.getWorld(), &localRandomState, framebufferIdx, renderer.getMaxLightBounce());
     }
     float colorScale = 1.0f / (float)renderer.getAntiAliasingPixelSamples();
     float gammaPower = 1.0f / renderer.getGamma();

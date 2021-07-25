@@ -36,6 +36,11 @@ __device__ inline glm::vec3 randomVec3(curandState* localRandomState, int frameb
     return 2.0f * glm::vec3(curand_uniform(localRandomState), curand_uniform(localRandomState), curand_uniform(localRandomState)) - 1.0f;
 }
 
+__device__ inline glm::vec3 randomUnitVector(curandState* localRandomState, int framebufferIdx)
+{
+    return glm::normalize(randomVec3(localRandomState, framebufferIdx));
+}
+
 __device__ inline glm::vec3 randomInUnitSphere(curandState* localRandomState, int framebufferIdx)
 {
     while (true)

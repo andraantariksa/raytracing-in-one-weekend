@@ -1,5 +1,5 @@
-#ifndef RAYTRACING_SOURCE_OBJECT_SPHEREOBJECT_HPP
-#define RAYTRACING_SOURCE_OBJECT_SPHEREOBJECT_HPP
+#ifndef RAYTRACING_SOURCE_HIT_OBJECT_SPHEREOBJECT_CUH
+#define RAYTRACING_SOURCE_HIT_OBJECT_SPHEREOBJECT_CUH
 
 #include "../HitData.cuh"
 #include "../IHittableObject.cuh"
@@ -7,7 +7,10 @@
 class SphereObject: public IHittableObject
 {
 public:
-    __host__ __device__ SphereObject(glm::vec3 center, float r): m_r(r), m_center(center)
+    __host__ __device__ SphereObject(glm::vec3 center, float r, IMaterial* material):
+        m_r(r),
+        m_center(center),
+        m_material(material)
     {
     }
 
@@ -16,6 +19,7 @@ public:
 private:
     float m_r;
     glm::vec3 m_center;
+    IMaterial* m_material;
 };
 
 #endif //RAYTRACING_SOURCE_OBJECT_SPHEREOBJECT_HPP

@@ -1,5 +1,5 @@
-#ifndef _RAYTRACING_COLOR_HPP
-#define _RAYTRACING_COLOR_HPP
+#ifndef RAYTRACING_SOURCE_TYPEDEF_CUH
+#define RAYTRACING_SOURCE_TYPEDEF_CUH
 
 #include <glm/glm.hpp>
 #include <cstdint>

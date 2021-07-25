@@ -1,5 +1,5 @@
-#ifndef _RT_SURFACE_HPP
-#define _RT_SURFACE_HPP
+#ifndef RAYTRACING_SOURCE_SURFACE_CUH
+#define RAYTRACING_SOURCE_SURFACE_CUH
 
 #include <cuda.h>
 #include <curand_kernel.h>

@@ -23,5 +23,6 @@ bool BoxObject::hit(HitData& hitDataClosest, const Ray& ray, float t_min, float 
     glm::vec3 b(t1.xyz);
     glm::vec3 c(t1.zxy);
     hitDataClosest.N = -glm::sign(ray.direction()) * glm::step(a, b) * glm::step(c, b);
+    hitDataClosest.material = m_material;
     return true;
 }

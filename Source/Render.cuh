@@ -1,5 +1,5 @@
-#ifndef RENDER
-#define RENDER
+#ifndef RAYTRACING_SOURCE_RENDER_CUH
+#define RAYTRACING_SOURCE_RENDER_CUH
 
 #include <cuda.h>
 #include <curand_kernel.h>
@@ -50,30 +50,38 @@ public:
         int framebufferIdx,
         int maxRecursionDepth)
     {
-//        float currentAttenuation = 1.0f;
-//        Ray currentRay = ray;
-//        for (int i = 0; i < maxRecursionDepth; ++i)
-//        {
-//            HitData hitData;
-//            bool hasValue = false;
-//            world.hit(hitData, hasValue, currentRay, 0.001f, std::numeric_limits<float>::infinity());
-//            if (hasValue)
-//            {
+        Color currentAttenuation(1.0f);
+        Ray currentRay = ray;
+        for (int i = 0; i < m_maxLightBounce; ++i)
+        {
+            HitData hitData;
+            if (world.hit(hitData, currentRay, 0.001f, std::numeric_limits<float>::infinity()))
+            {
+                Ray scatteredRay;
+                Color attenuation;
 //                auto target = hitData.coord + hitData.N
 //                    + glm::normalize(randomInHemisphere(hitData.N, localRandomState, framebufferIdx));
-//                currentAttenuation *= 0.5f;
+                if (hitData.material->scatter(hitData, currentRay, attenuation, scatteredRay, localRandomState, framebufferIdx))
+                {
+                    currentAttenuation *= attenuation;
+                    currentRay = scatteredRay;
+                }
+                else
+                {
+                    return Color(0.0f);
+                }
 //                currentRay = Ray(hitData.coord, target - hitData.coord);
-//            }
-//            else
-//            {
-//                auto directionNorm = glm::normalize(currentRay.direction());
-//                auto t = (directionNorm.y + 1.0f) * 0.5f;
-//                auto color = glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
-//                return currentAttenuation * color;
-//            }
-//        }
+            }
+            else
+            {
+                auto directionNorm = glm::normalize(currentRay.direction());
+                auto t = (directionNorm.y + 1.0f) * 0.5f;
+                auto color = glm::lerp(Color(0.67f, 0.84f, 0.92f), Color(1.0f), glm::vec3(t));
+                return currentAttenuation * color;
+            }
+        }
 
-        return Color(1.0f, 0.0f, 0.0f);
+        return Color(0.0f);
     }
 
     __device__ __host__ inline uint32_t framebufferIndexFlipped(uint32_t x, uint32_t y)
