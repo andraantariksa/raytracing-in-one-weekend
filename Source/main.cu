@@ -16,7 +16,6 @@
 #include "Typedef.cuh"
 #include "Surface.cuh"
 #include "Ray.cuh"
-#include "Hit/HittableObjects.cuh"
 #include "Hit/Object/SphereObject.cuh"
 #include "Camera.cuh"
 #include "Render.cuh"
@@ -25,12 +24,19 @@
 #include "Util/SDLHelpers.cuh"
 #include "Util/Timer.cuh"
 
+__global__ void init(IHittableObject** objects)
+{
+    objects[0] = new SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 4.0f);
+    objects[1] = new SphereObject(glm::vec3(0.0f, -104.0f, -10.0f), 100.0f);
+}
+
 int main()
 {
     assert(SDL_Init(SDL_INIT_VIDEO) == 0);
 
-    const int windowWidth = 1280;
-    const int windowHeight = 720;
+    const float aspectRatio = 16.0f / 9.0f;
+    const float windowHeight = 720;
+    const float windowWidth = windowHeight * aspectRatio;
     const float viewportWidth = 10.0f * ((float)windowWidth / (float)windowHeight);
     const float viewportHeight = 10.0f;
     const float vocalLength = 10.0f;
@@ -41,55 +47,17 @@ int main()
         SDL_CreateWindow("Raytracing", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     assert(window != nullptr);
 
-//    CUDA_Render cudaRender{};
-//    cudaMalloc((void**)&cudaRender.gpuFramebuffer, sizeof(uint32_t) * windowWidth * windowHeight);
-//    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
-//    cudaMalloc((void**)&cudaRender.randomState, sizeof(curandState) * windowWidth * windowHeight);
-//    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
-
     // Draw
     Surface surf(window, windowWidth, windowHeight);
-    Camera camera(glm::vec3(0.0f), viewportWidth, viewportHeight, vocalLength);
-
-//    HittableObjects world;
-//    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f)));
-//    world.add(std::make_shared<SphereObject>(SphereObject(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f)));
+    Camera camera(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), M_PI / 2.0f, aspectRatio);
 
     HittableObjectsDevice worldDevice(2);
-
-    SphereObject* od_1;
-    cudaMalloc(&od_1, sizeof(SphereObject));
-    SphereObject oh_1(glm::vec3(0.0f, 0.0f, -10.0f), 3.0f);
-    cudaMemcpy(od_1, &oh_1, sizeof(SphereObject), cudaMemcpyHostToDevice);
-    cudaMemcpy(&worldDevice.m_objects[0], &od_1, sizeof(IHittableObject*), cudaMemcpyHostToDevice);
-//    worldDevice.set(0, (IHittableObject **)&od_1);
-
-    SphereObject* od_2;
-    cudaMalloc(&od_2, sizeof(SphereObject));
-    SphereObject oh_2(glm::vec3(-4.0f, 0.0f, -10.0f), 4.0f);
-    cudaMemcpy(od_2, &oh_2, sizeof(SphereObject), cudaMemcpyHostToDevice);
-    cudaMemcpy(&worldDevice.m_objects[1], &od_2, sizeof(IHittableObject*), cudaMemcpyHostToDevice);
-//    worldDevice.set(1, (IHittableObject **)&od_2);
+    init<<<1, 1>>>(worldDevice.getObjects());
 
     CUDARenderer renderer(windowWidth, windowHeight, camera, worldDevice, pixelSamples, maxRecursionDepth, 2.0f);
 
-//    CUDA_render_init_<<<1280, 720>>>(
-//        cudaRender.randomState,
-//        windowWidth,
-//        windowHeight);
-//    printf("%s\n", cudaGetErrorString(cudaGetLastError()));
-
     surf.setDrawFunc([&](auto s)
     {
-//      CUDA_render_render_<<<1280, 720>>>(cudaRender.gpuFramebuffer,
-//          cudaRender.randomState,
-//          windowWidth,
-//          windowHeight,
-//          pixelSamples,
-//          camera,
-//          worldDevice,
-//          maxRecursionDepth);
-//        surf.copyFramebufferDeviceToHost(cudaRender.gpuFramebuffer);
         renderer.render();
         surf.copyFramebufferDeviceToHost(thrust::raw_pointer_cast(renderer.getGPUFramebuffer()));
     });
@@ -98,13 +66,13 @@ int main()
     // End draw
 
     Timer update;
-    update.start();
     Timer fps;
-    fps.start();
 
-    SDL_Event event;
+    update.start();
+    fps.start();
     int frame = 0;
 
+    SDL_Event event;
     bool running = true;
     bool isNeedToRedraw = false;
     while (running)
@@ -121,7 +89,6 @@ int main()
                 switch (event.key.keysym.sym)
                 {
                 case SDLK_a:
-                    std::cout << "A pressed\n";
                     camera.transform(glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f)));
                     break;
                 case SDLK_d:

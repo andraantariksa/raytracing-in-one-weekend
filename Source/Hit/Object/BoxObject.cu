@@ -4,7 +4,7 @@
 
 #include "../../Ray.cuh"
 
-void BoxObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, float t_min, float t_max) const
+bool BoxObject::hit(HitData& hitDataClosest, const Ray& ray, float t_min, float t_max) const
 {
     auto m = 1.0f / ray.direction();
     auto n = m * ray.origin();
@@ -15,8 +15,7 @@ void BoxObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, flo
     auto tF = std::min(std::min(t2.x, t2.y), t2.z);
     if (tN > tF || tF < 0.0f)
     {
-        hasValue = false;
-        return;
+        return false;
     }
     hitDataClosest.coord = ray.at(tN);
     hitDataClosest.t = tN;
@@ -24,5 +23,5 @@ void BoxObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, flo
     glm::vec3 b(t1.xyz);
     glm::vec3 c(t1.zxy);
     hitDataClosest.N = -glm::sign(ray.direction()) * glm::step(a, b) * glm::step(c, b);
-    hasValue = true;
+    return true;
 }

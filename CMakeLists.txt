@@ -13,8 +13,6 @@ add_executable(raytracing
         Source/Hit/HitData.cuh
         Source/Hit/Object/SphereObject.cu
         Source/Hit/Object/SphereObject.cuh
-        Source/Hit/HittableObjects.cu
-        Source/Hit/HittableObjects.cuh
         Source/Util/Random.cuh
         Source/Camera.cu
         Source/Camera.cuh

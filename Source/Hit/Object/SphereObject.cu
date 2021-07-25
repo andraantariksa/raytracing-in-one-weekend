@@ -2,7 +2,7 @@
 
 #include "SphereObject.cuh"
 
-void SphereObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, float t_min, float t_max) const
+bool SphereObject::hit(HitData& hitDataClosest, const Ray& ray, float t_min, float t_max) const
 {
     // P = Point lies in the sphere surface (Vector)
     // C = m_center of sphere (Vector)
@@ -36,8 +36,7 @@ void SphereObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, 
     auto discriminant = halfB * halfB - a * c;
     if (discriminant < 0.0f)
     {
-        hasValue = false;
-        return;
+        return false;
     }
 
     float discriminantSqrt = std::sqrt(discriminant);
@@ -49,14 +48,12 @@ void SphereObject::hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, 
         root = (-halfB + discriminantSqrt) / a;
         if (root < t_min || root > t_max)
         {
-            hasValue = false;
-            return;
+            return false;
         }
     }
 
     hitDataClosest.coord = ray.at(root),
     hitDataClosest.t = root;
     hitDataClosest.N = glm::normalize(hitDataClosest.coord - m_center);
-    hasValue = true;
-//    return hitData;
+    return true;
 }

@@ -11,7 +11,6 @@
 #include "Hit/HittableObjectsDevice.cuh"
 #include "Typedef.cuh"
 #include "Camera.cuh"
-#include "Hit/HittableObjects.cuh"
 #include "Hit/HittableObjectsDevice.cuh"
 #include "Util/Random.cuh"
 #include "Surface.cuh"
@@ -154,26 +153,5 @@ private:
     int m_antiAliasingPixelSamples;
     float m_gamma;
 };
-
-struct CUDA_Render
-{
-    uint32_t* gpuFramebuffer;
-    curandState *randomState;
-};
-
-// Section
-// 0 = Top left
-// 1 = Top right
-// 2 = Bottom left
-// 3 = Bottom right
-__global__ void CUDA_render_init_(curandState* randomState, int windowWidth, int windowHeight);
-__global__ void CUDA_render_render_(uint32_t* framebuffer,
-    curandState* randomState,
-    int windowWidth,
-    int windowHeight,
-    int pixelSamples,
-    Camera camera,
-    const HittableObjectsDevice world,
-    int maxRecursionDepth);
 
 #endif

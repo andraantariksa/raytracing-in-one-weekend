@@ -1,25 +1,37 @@
 #include "Ray.cuh"
 #include "Camera.cuh"
 
-Camera::Camera(glm::vec3 origin, float viewportWidth, float viewportHeight, float vocalLength):
+Camera::Camera(glm::vec3& origin, glm::vec3& lookAt, glm::vec3& up, float verticalFieldOfView, float aspectRatio) :
     m_origin(origin),
-    m_viewportWidth(viewportWidth),
-    m_viewportHeight(viewportHeight),
-    m_vocalLength(vocalLength)
+    m_up(up),
+    m_lookAt(lookAt),
+    m_verticalFieldOfView(verticalFieldOfView),
+    m_aspectRatio(aspectRatio)
 {
     recalculate();
 }
 
 void Camera::recalculate()
 {
-    m_viewportOrigin = m_origin + glm::vec3(-m_viewportWidth / 2.0f, -m_viewportHeight / 2.0f, -m_vocalLength);
+    auto h = std::tan(m_verticalFieldOfView / 2.0f);
+
+    m_viewportHeight = 2.0f * h;
+    m_viewportWidth = m_aspectRatio * m_viewportHeight;
+
+    auto w = glm::normalize(m_origin - m_lookAt);
+    auto u = glm::normalize(glm::cross(m_up, w));
+    auto v = glm::cross(w, u);
+
+    m_horizontal = u * m_viewportWidth;
+    m_vertical = v * m_viewportHeight;
+    m_viewportOrigin = m_origin - (m_horizontal / 2.0f) - (m_vertical / 2.0f) - w;
 }
 
-Ray Camera::getRay(float u, float v) const
+Ray Camera::getRay(float s, float t) const
 {
     auto rayDirection = m_viewportOrigin +
-        glm::vec3(m_viewportWidth, 0.0f, 0.0f) * u +
-        glm::vec3(0.0f, m_viewportHeight, 0.0f) * v -
+        m_horizontal * s +
+        m_vertical * t -
         m_origin;
     return Ray(m_origin, rayDirection);
 }

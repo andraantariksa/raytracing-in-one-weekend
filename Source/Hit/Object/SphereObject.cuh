@@ -12,7 +12,7 @@ public:
     }
 
     [[nodiscard]]
-    __host__ __device__ void hit(HitData& hitDataClosest, bool& hasValue, const Ray& ray, float t_min, float t_max) const override;
+    __host__ __device__ bool hit(HitData& hitDataClosest, const Ray& ray, float t_min, float t_max) const override;
 private:
     float m_r;
     glm::vec3 m_center;
